@@ -7,12 +7,46 @@
 #include "QuestInteraction.h"
 #include "CL_SoTMockCharacter.generated.h"
 
+// -----------------------------------------------------------------------------
+
 class UDataTable;
+
+// -----------------------------------------------------------------------------
 
 UCLASS(config=Game)
 class ACL_SoTMockCharacter : public ACharacter, public IQuestInteractionInterface
 {
 	GENERATED_BODY()
+
+public:
+	ACL_SoTMockCharacter();
+
+	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
+	float BaseTurnRate;
+
+	/** Base look up/down rate, in deg/sec. Other scaling may affect final rate. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
+	float BaseLookUpRate;
+
+	/** Returns CameraBoom subobject **/
+	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	/** Returns FollowCamera subobject **/
+	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	/** Called from any quest object once player overlaps it */
+	UFUNCTION(BlueprintCallable, Category = Quest)
+	void SetCurrentPlayerQuest(FQuestDetails QuestToBeMadeCurrent);
+
+	UFUNCTION()
+	void PickUpObject();
+
+	UFUNCTION()
+	void TellPotToEndCooking();
+
+	void AllowPlayerToFinishCooking(bool bPlayerCanFinishCooking);
+
+protected:
 
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -28,18 +62,15 @@ class ACL_SoTMockCharacter : public ACharacter, public IQuestInteractionInterfac
 	UPROPERTY(EditDefaultsOnly, Category = Quest, meta = (AllowPrivateAccess = "true"))
 	UDataTable* QuestTableReference;
 
-public:
-	ACL_SoTMockCharacter();
+	// To access the relevant socket name in C++
+	UPROPERTY(EditDefaultsOnly)
+	FName FoodSocketName;
 
-	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
-	float BaseTurnRate;
+	// Set to true if the player is close to the cooking pot so they can finish cooking
+	bool bCanFinishCooking;
 
-	/** Base look up/down rate, in deg/sec. Other scaling may affect final rate. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
-	float BaseLookUpRate;
-
-protected:
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<AActor> CookingPotClass;
 
 	/** Resets HMD orientation in VR. */
 	void OnResetVR();
@@ -68,7 +99,6 @@ protected:
 	/** Handler for when a touch input stops. */
 	void TouchStopped(ETouchIndex::Type FingerIndex, FVector Location);
 
-protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	// End of APawn interface
@@ -76,14 +106,8 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:
-	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-	/** Returns FollowCamera subobject **/
-	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
-
-	/** Called from any quest object once player overlaps it */
-	UFUNCTION(BlueprintCallable, Category = Quest)
-	void SetCurrentPlayerQuest(FQuestDetails QuestToBeMadeCurrent);
 };
 
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------

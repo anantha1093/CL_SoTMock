@@ -8,9 +8,11 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "FoodItem.h"
+#include "DrawDebugHelpers.h"
+#include "CookingPot.h"
 
-//////////////////////////////////////////////////////////////////////////
-// ACL_SoTMockCharacter
+// -----------------------------------------------------------------------------
 
 ACL_SoTMockCharacter::ACL_SoTMockCharacter()
 {
@@ -43,9 +45,14 @@ ACL_SoTMockCharacter::ACL_SoTMockCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
+	// This is the expected default socket
+	FoodSocketName = FName(TEXT("FoodItemSocket"));
+
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named MyCharacter (to avoid direct content references in C++)
 }
+
+// -----------------------------------------------------------------------------
 
 // Called when the game starts or when spawned
 void ACL_SoTMockCharacter::BeginPlay()
@@ -63,8 +70,7 @@ void ACL_SoTMockCharacter::BeginPlay()
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-// Input
+// -----------------------------------------------------------------------------
 
 void ACL_SoTMockCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
@@ -72,6 +78,9 @@ void ACL_SoTMockCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	check(PlayerInputComponent);
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
+
+	PlayerInputComponent->BindAction("Pickup", IE_Pressed, this, &ACL_SoTMockCharacter::PickUpObject);
+	PlayerInputComponent->BindAction("EndCooking", IE_Pressed, this, &ACL_SoTMockCharacter::TellPotToEndCooking);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &ACL_SoTMockCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ACL_SoTMockCharacter::MoveRight);
@@ -92,21 +101,28 @@ void ACL_SoTMockCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &ACL_SoTMockCharacter::OnResetVR);
 }
 
+// -----------------------------------------------------------------------------
 
 void ACL_SoTMockCharacter::OnResetVR()
 {
 	UHeadMountedDisplayFunctionLibrary::ResetOrientationAndPosition();
 }
 
+// -----------------------------------------------------------------------------
+
 void ACL_SoTMockCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
 {
 		Jump();
 }
 
+// -----------------------------------------------------------------------------
+
 void ACL_SoTMockCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVector Location)
 {
 		StopJumping();
 }
+
+// -----------------------------------------------------------------------------
 
 void ACL_SoTMockCharacter::TurnAtRate(float Rate)
 {
@@ -114,11 +130,15 @@ void ACL_SoTMockCharacter::TurnAtRate(float Rate)
 	AddControllerYawInput(Rate * BaseTurnRate * GetWorld()->GetDeltaSeconds());
 }
 
+// -----------------------------------------------------------------------------
+
 void ACL_SoTMockCharacter::LookUpAtRate(float Rate)
 {
 	// calculate delta for this frame from the rate information
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
 }
+
+// -----------------------------------------------------------------------------
 
 void ACL_SoTMockCharacter::MoveForward(float Value)
 {
@@ -133,6 +153,8 @@ void ACL_SoTMockCharacter::MoveForward(float Value)
 		AddMovementInput(Direction, Value);
 	}
 }
+
+// -----------------------------------------------------------------------------
 
 void ACL_SoTMockCharacter::MoveRight(float Value)
 {
@@ -149,7 +171,86 @@ void ACL_SoTMockCharacter::MoveRight(float Value)
 	}
 }
 
+// -----------------------------------------------------------------------------
+
 void ACL_SoTMockCharacter::SetCurrentPlayerQuest(FQuestDetails QuestToBeMadeCurrent)
 {
 	PlayerQuestDetails = QuestToBeMadeCurrent;
 }
+
+// -----------------------------------------------------------------------------
+
+void ACL_SoTMockCharacter::PickUpObject()
+{
+	FVector TraceStartLocation;
+	FVector TraceEndLocation;
+	float LineTraceDistance = 400.0f;
+	
+	TraceStartLocation = FollowCamera->GetComponentLocation();
+	FRotator CameraRot = FollowCamera->GetComponentRotation();
+
+	TraceEndLocation = TraceStartLocation + (CameraRot.Vector() * LineTraceDistance);
+
+	FCollisionQueryParams PickupTraceParams(FName(TEXT("PickupTrace")), false, nullptr);
+
+	TArray<FHitResult> PickupHitResults;
+
+	if (GetWorld()->SweepMultiByChannel(
+		PickupHitResults,
+		TraceStartLocation,
+		TraceEndLocation, 
+		FQuat::Identity, 
+		ECollisionChannel::ECC_GameTraceChannel1, 
+		FCollisionShape::MakeSphere(100.0f), 
+		PickupTraceParams))
+	{
+		DrawDebugSphere(GetWorld(), TraceStartLocation, 100.0f, 12, FColor::Red, true, 10.0f, 1, 2.0f);
+		for (int32 i = 0; i < PickupHitResults.Num(); i++)
+		{
+			FHitResult PickupHitResult = PickupHitResults[i];
+			if (AFoodItem* FoodItemToPickup = Cast<AFoodItem>(PickupHitResult.Actor))
+			{
+				DrawDebugSphere(GetWorld(), PickupHitResult.ImpactPoint, 100.0f, 12, FColor::Red, true, 10.0f, 1, 2.0f);
+				FAttachmentTransformRules::FAttachmentTransformRules(EAttachmentRule::KeepWorld, true);
+				FoodItemToPickup->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepWorldTransform, FoodSocketName);
+				UE_LOG(LogTemp, Log, TEXT("Attached food to character!"));
+			}
+			else
+			{
+				DrawDebugSphere(GetWorld(), PickupHitResult.ImpactPoint, 100.0f, 12, FColor::Yellow, true, 10.0f, 1, 2.0f);
+				UE_LOG(LogTemp, Log, TEXT("Didn't hit a food item."));
+			}
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Trace hit nothing."));
+	}
+}
+
+// -----------------------------------------------------------------------------
+
+void ACL_SoTMockCharacter::TellPotToEndCooking()
+{
+	if (CookingPotClass)
+	{
+		TArray<AActor*> OverlappedActors;
+		GetOverlappingActors(OverlappedActors, CookingPotClass);
+		for (int32 i = 0; i < OverlappedActors.Num(); i++)
+		{
+			if (ACookingPot* CookingPot = Cast<ACookingPot>(OverlappedActors[i]))
+			{
+				CookingPot->EndCooking();
+			}
+		}
+	}
+}
+
+void ACL_SoTMockCharacter::AllowPlayerToFinishCooking(bool bPlayerCanFinishCooking)
+{
+	bCanFinishCooking = bPlayerCanFinishCooking;
+}
+
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
