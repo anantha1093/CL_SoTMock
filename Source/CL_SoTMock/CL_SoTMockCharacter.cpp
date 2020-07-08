@@ -60,8 +60,7 @@ void ACL_SoTMockCharacter::BeginPlay()
 	Super::BeginPlay();
 	if (QuestTableReference)
 	{
-		static const FString ContextString(TEXT("Quest data"));
-		PlayerQuestDetails = *(QuestTableReference->FindRow<FQuestDetails>(TEXT("Quest_1"), ContextString, true));
+		PlayerQuestDetails = *(QuestTableReference->FindRow<FQuestDetails>(TEXT("Quest_1"), QuestContextString::ContextString, true));
 		UE_LOG(LogTemp, Log, TEXT("Successfully got quest data from table!"));
 	}
 	else
@@ -245,6 +244,8 @@ void ACL_SoTMockCharacter::TellPotToEndCooking()
 		}
 	}
 }
+
+// -----------------------------------------------------------------------------
 
 void ACL_SoTMockCharacter::AllowPlayerToFinishCooking(bool bPlayerCanFinishCooking)
 {

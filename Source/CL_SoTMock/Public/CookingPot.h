@@ -15,33 +15,6 @@ class AFoodItem;
 
 // -----------------------------------------------------------------------------
 
-//USTRUCT(BlueprintType, Blueprintable)
-//struct FFoodTableMember : public FTableRowBase
-//{
-//	GENERATED_BODY()
-//
-//	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Food)
-//	FName FoodName;
-//	
-//	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = Food)
-//	int32 TimeNeededToPrepare;
-//
-//	// Default constructor
-//	FFoodTableMember()
-//	{
-//		FoodName = NAME_None;
-//		TimeNeededToPrepare = 0;
-//	}
-//
-//	// Parameterised constructor
-//	FFoodTableMember(FName InFoodName, int32 InTimeNeededToPrepare) :
-//		FoodName(InFoodName),
-//		TimeNeededToPrepare(InTimeNeededToPrepare)
-//	{}
-//};
-
-// -----------------------------------------------------------------------------
-
 UCLASS()
 class CL_SOTMOCK_API ACookingPot : public AActor
 {
@@ -50,9 +23,6 @@ class CL_SOTMOCK_API ACookingPot : public AActor
 public:	
 	// Sets default values for this actor's properties
 	ACookingPot();
-
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION()
 	void StartCooking(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult &SweepResult);
@@ -77,9 +47,6 @@ protected:
 	// Used to tick and keep track of cooking
 	FTimerHandle TimerHandle_Cooking;
 
-	//// Used to keep track of present recipes and current cooking time
-	//FFoodTableMember CurrentlyCookingFood;
-
 	// How many seconds have passed since cooking has started
 	int32 CurrentCookingTime;
 
@@ -87,9 +54,6 @@ protected:
 	AFoodItem* FoodCurrentlyOnPot;
 
 	bool bHasFoodFinishedCooking;
-
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void StartBurningFood();

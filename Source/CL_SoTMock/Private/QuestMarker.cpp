@@ -4,6 +4,8 @@
 #include "QuestMarker.h"
 #include "Components/BoxComponent.h"
 
+// -----------------------------------------------------------------------------
+
 // Sets default values
 AQuestMarker::AQuestMarker()
 {
@@ -12,11 +14,15 @@ AQuestMarker::AQuestMarker()
 	QuestCompletionBounds = CreateDefaultSubobject<UBoxComponent>(TEXT("QuestCompletionBounds"));
 }
 
+// -----------------------------------------------------------------------------
+
 // Called when the game starts or when spawned
 void AQuestMarker::BeginPlay()
 {
 	Super::BeginPlay();
 }
+
+// -----------------------------------------------------------------------------
 
 // Called every frame
 void AQuestMarker::Tick(float DeltaTime)
@@ -24,32 +30,34 @@ void AQuestMarker::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-FQuestDetails AQuestMarker::FindNextQuest_Implementation(FName CurrentQuest, UDataTable* QuestTable)
+// -----------------------------------------------------------------------------
+
+FQuestDetails AQuestMarker::FindNextQuest_Implementation(const FName CurrentQuest, const UDataTable* QuestTable)
 {
 	// Making sure that the table exists. Can't be too careful, eh?
 	if (QuestTable)
 	{
-		// This static declaration is required for the FindRow() function.
-		static const FString ContextString(TEXT("Quest data"));
-		FQuestDetails* CurrentQuestDetails = QuestTable->FindRow<FQuestDetails>(CurrentQuest, ContextString, true);
-		if (CurrentQuestDetails)
+		if (FQuestDetails* CurrentQuestDetails = QuestTable->FindRow<FQuestDetails>(CurrentQuest, QuestContextString::ContextString, true))
 		{
 			// Ensure that this is the quest we want to send the player on before proceeding further with this.
 			if (CurrentQuestDetails->CurrentQuestName() == MarkerQuestDetails.CurrentQuestName())
 			{
 				// Let's use the function for orthogonality!
 				FName NewQuest = CurrentQuestDetails->NextQuestBranch();
-				CurrentQuestDetails = QuestTable->FindRow<FQuestDetails>(NewQuest, ContextString, true);
+				CurrentQuestDetails = QuestTable->FindRow<FQuestDetails>(NewQuest, QuestContextString::ContextString, true);
 				// This is the safest case.
-				if (NewQuest != TEXT("None") && CurrentQuestDetails)
+				if (CurrentQuestDetails)
 				{
-					UE_LOG(LogTemp, Log, TEXT("Successfully found next quest!"));
-					return *(CurrentQuestDetails);
-				}
-				else
-				{
-					UE_LOG(LogTemp, Log, TEXT("The quest is correct but there's no new quest data, or the row doesn't exist!"));
-					return FQuestDetails::FQuestDetails();
+					if (NewQuest != NAME_None)
+					{
+						UE_LOG(LogTemp, Log, TEXT("Successfully found next quest!"));
+						return *(CurrentQuestDetails);
+					}
+					else
+					{
+						UE_LOG(LogTemp, Log, TEXT("The quest is correct but there's no new quest data, or the row doesn't exist!"));
+						return FQuestDetails::FQuestDetails();
+					}
 				}
 			}
 			else
@@ -71,3 +79,7 @@ FQuestDetails AQuestMarker::FindNextQuest_Implementation(FName CurrentQuest, UDa
 		return FQuestDetails::FQuestDetails();
 	}
 }
+
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------

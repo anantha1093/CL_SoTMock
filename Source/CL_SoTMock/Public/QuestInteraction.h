@@ -13,6 +13,16 @@ class AQuestMarker;
 
 // -----------------------------------------------------------------------------
 
+namespace
+{
+	namespace QuestContextString
+	{
+		static const FString ContextString(TEXT("Quest data"));
+	}
+}
+
+// -----------------------------------------------------------------------------
+
 /**
 * This structure has information about each quest and where the quest branches to.
 * It will be the baseline for the data table.
@@ -27,22 +37,21 @@ public:
 	// Default constructor
 	FQuestDetails()
 	{
-		QuestName = TEXT("None");
-		QuestDescription = TEXT("SomeText");		
+		QuestName = NAME_None;
+		QuestDescription = NAME_None;
 	}
 
 	// Parameterised constructor
-	FQuestDetails(FName QName, FString QDesc, TArray<FName> NextQs, TArray<FName> PrevQs)
-	{
-		QuestName = QName;
-		QuestDescription = QDesc;
-		NextQuests = NextQs;
-		PreviousQuests = PrevQs;
-	}
+	FQuestDetails(FName QName, FString QDesc, TArray<FName> NextQs, TArray<FName> PrevQs) : 
+		QuestName(QName),
+		QuestDescription(QDesc),
+		NextQuests(NextQs),
+		PreviousQuests(PrevQs)
+	{}
 
 	// Used instead of directly accessing the variable to maintain orthogonality
 	//UFUNCTION(BlueprintCallable, Category = Quest)
-	bool IsQuestBranched()
+	bool IsQuestBranched() const
 	{
 		if (NextQuests.Num() < 1) return false;
 		else return true;
@@ -50,13 +59,13 @@ public:
 
 	// Simple way to move to the next branch of quest
 	//UFUNCTION(BlueprintCallable, Category = Quest)
-	FName NextQuestBranch()
+	FName NextQuestBranch() const
 	{
 		int32 RandomBranch = FMath::RandRange(0, (NextQuests.Num() - 1));
 		return NextQuests[RandomBranch];
 	}
 
-	FName CurrentQuestName()
+	FName CurrentQuestName() const
 	{
 		return QuestName;
 	}
@@ -103,7 +112,7 @@ class IQuestInteractionInterface
 
 	// Use this function anywhere to get the next quest - ensure you pass the data table through though!
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent, Category = Quest)
-	FQuestDetails FindNextQuest(FName CurrentQuest, UDataTable* QuestTable);
+	FQuestDetails FindNextQuest(const FName CurrentQuest, const UDataTable* QuestTable);
 };
 
 // -----------------------------------------------------------------------------

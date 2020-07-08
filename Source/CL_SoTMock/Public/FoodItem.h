@@ -22,11 +22,8 @@ public:
 	// Sets default values for this actor's properties
 	AFoodItem();
 
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
 	// To tell the pot and the player how long this takes to cook
-	int32 GetTimeTakenToCook() { return TimeTakenToCook; }
+	int32 GetTimeTakenToCook() const { return TimeTakenToCook; }
 
 protected:
 
@@ -39,9 +36,6 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	int32 TimeTakenToCook;
-
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
 
 };
 

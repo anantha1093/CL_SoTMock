@@ -13,8 +13,6 @@
 // Sets default values
 ACookingPot::ACookingPot()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
 	CookingAreaBox = CreateDefaultSubobject<UBoxComponent>(TEXT("CookingAreaBox"));
 	CookingPotMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CookingPotMesh"));
 	RootComponent = CookingPotMesh;
@@ -23,24 +21,6 @@ ACookingPot::ACookingPot()
 	CookingAreaBox->OnComponentEndOverlap.AddDynamic(this, &ACookingPot::LetPlayerStopCooking);
 	CurrentCookingTime = 0;
 	bHasFoodFinishedCooking = false;
-}
-
-// -----------------------------------------------------------------------------
-
-// Called when the game starts or when spawned
-void ACookingPot::BeginPlay()
-{
-	Super::BeginPlay();
-	
-}
-
-// -----------------------------------------------------------------------------
-
-// Called every frame
-void ACookingPot::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
 }
 
 // -----------------------------------------------------------------------------
